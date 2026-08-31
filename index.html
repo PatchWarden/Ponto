@@ -308,6 +308,7 @@ details.adv > div{padding-bottom:11px;display:flex;flex-direction:column;gap:8px
       </select></div>
     </div>
     <p class="hint">Passado o prazo, os dias antigos são apagados e só o <b>resumo do mês</b> (trabalhado, previsto, saldo) fica guardado — o acumulado continua certo. Baixe o backup antes se quiser guardar o detalhe.</p>
+    <p class="hint">A apuração começa no dia em que você abriu o app pela primeira vez — nada antes disso entra na conta. Só mude essa data se quiser lançar dias anteriores à mão.</p>
     <p class="hint">Seg–sex: intervalo descontado automaticamente quando o dia tem só um par entrada/saída. Sáb–dom: nada é descontado e tudo entra como adicional. Dia útil passado sem marcação desconta a jornada inteira, a menos que você marque o dia como abonado.</p>
   </div>
 
@@ -457,7 +458,13 @@ var S = load();
 function load(){
   try{
     var raw = localStorage.getItem(KEY);
-    if(!raw) return JSON.parse(JSON.stringify(DEF));
+    if(!raw){
+      // primeira abertura: a apuração começa hoje, senão os dias úteis
+      // anteriores à instalação entrariam como falta
+      var novo = JSON.parse(JSON.stringify(DEF));
+      novo.cfg.inicio = ymd(new Date());
+      return novo;
+    }
     var o = JSON.parse(raw);
     o.perfil = Object.assign({}, DEF.perfil, o.perfil||{});
     o.cfg = Object.assign({}, DEF.cfg, o.cfg||{});
@@ -470,6 +477,8 @@ function load(){
   }catch(e){ return JSON.parse(JSON.stringify(DEF)); }
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ toast('Não consegui salvar neste navegador.'); } }
+// grava já na primeira abertura, para fixar a data de início da apuração
+try{ if(!localStorage.getItem(KEY)) save(); }catch(e){}
 function dia(d){ if(!S.dias[d]) S.dias[d] = { m:[], sit:'normal', almoco:null, obs:'' }; return S.dias[d]; }
 function hojeStr(){ return ymd(new Date()); }
 function mesKey(d){ return d.slice(0,7); }
