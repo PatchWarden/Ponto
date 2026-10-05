@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#3F3D9E">
+<meta name="theme-color" content="#0d0f1c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Ponto">
@@ -221,6 +221,60 @@ details.adv > summary::before{content:'▸ ';color:var(--ink-3)}
 details.adv[open] > summary::before{content:'▾ '}
 details.adv > div{padding-bottom:11px;display:flex;flex-direction:column;gap:8px}
 .mk select{padding:10px 6px;font-size:14px}
+
+/* ===== Visual escuro com degradê (substitui o tema anterior; o logo continua no mesmo lugar) ===== */
+:root,:root[data-theme="dark"],:root[data-theme="light"]{
+  color-scheme:dark;
+  --logo:var(--logo-escuro);
+  --bg:#0d0f1c; --surface:#171a34; --surface-2:#1d2040; --surface-3:#262a50;
+  --ink:#eef0fb; --ink-2:#b4b8d6; --ink-3:#8b8fb3;
+  --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.2);
+  --accent:#8ef0c5; --accent-ink:#0d0f1c; --accent-soft:rgba(142,240,197,.14); --accent-line:rgba(142,240,197,.35);
+  --pos:#6df0b4; --pos-soft:rgba(109,240,180,.14);
+  --neg:#ff9a90; --neg-soft:rgba(255,154,144,.14);
+  --warn:#ffd27a; --warn-soft:rgba(255,210,122,.16);
+  --shadow:0 10px 30px rgba(0,0,0,.28);
+  --r:22px;
+}
+html{background:#0d0f1c}
+body{background:radial-gradient(120% 50% at 50% -8%,#3a3fb8 0%,#14163a 45%,#0d0f1c 80%) no-repeat fixed #0d0f1c}
+.app{background:transparent}
+header{background:transparent;border-bottom:0}
+.card,.kpi{background:linear-gradient(160deg,rgba(255,255,255,.12),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.12)}
+.clock{padding:22px 14px 18px}
+.clock .time{font-size:clamp(50px,17vw,64px);font-weight:700}
+.state.in{background:rgba(80,230,160,.15)}
+.state.in .dot{box-shadow:0 0 0 4px rgba(109,240,180,.2)}
+.target{gap:10px;background:transparent;border-top:0;padding:0 12px 12px}
+.target > div{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);border-radius:18px}
+.btn{border-radius:16px;background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12)}
+.btn.primary{background:linear-gradient(135deg,#8ef0c5,#7aa8ff);border:0;color:#0d0f1c;box-shadow:0 10px 26px rgba(122,168,255,.35)}
+.btn.huge{border-radius:20px;padding:24px 16px}
+.btn.ghost{background:transparent}
+.cdbar > i{background:linear-gradient(90deg,#8ef0c5,#7aa8ff)}
+.tl .row{border-top-color:rgba(255,255,255,.07)}
+.nav-btn{background:rgba(255,255,255,.1);border:0;border-radius:99px}
+.kpis{gap:10px;background:transparent;border:0;border-radius:0;overflow:visible}
+.kpi{border-radius:20px}
+.days.card{background:transparent;border:0;box-shadow:none;overflow:visible}
+.day{border-top:0;background:rgba(255,255,255,.06);border-radius:16px;margin-bottom:8px;width:100%}
+.day.fds{background:rgba(255,255,255,.03);opacity:.8}
+.day.today{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.day .dnum{font-size:20px;font-weight:700}
+.day .sit.fer,.day .sit.hm{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10.5px;margin-top:3px}
+.day .sit.fer{background:var(--warn-soft);color:var(--warn)}
+.day .sit.hm{background:rgba(122,168,255,.2);color:#a9c4ff}
+table.tbl th,table.tbl td{border-bottom-color:rgba(255,255,255,.07)}
+nav.tabs{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));max-width:446px;margin:0 auto;border-radius:22px;
+  background:rgba(30,32,60,.92);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);padding-bottom:0}
+nav.tabs .inner{max-width:none}
+nav.tabs button{border-top:0;margin-top:0;padding:10px 4px}
+nav.tabs button.on{color:var(--accent)}
+main{padding-bottom:110px}
+.toast{bottom:calc(88px + env(safe-area-inset-bottom))}
+.sheet{background:#171a34;border:1px solid rgba(255,255,255,.1)}
+details.adv{border-color:rgba(255,255,255,.12)}
+.btn.dark{background:linear-gradient(135deg,#ffc08a,#ff8fb0);border:0;color:#0d0f1c;box-shadow:0 10px 26px rgba(255,143,176,.3)}
 </style>
 </head>
 <body>
@@ -745,7 +799,7 @@ function renderDias(){
     var sub = (c.feriado && c.situacao === 'Adicional' ? 'Feriado trabalhado' : c.feriado ? 'Feriado' : c.situacao) + (c.trabalhado ? ' · '+minToHM(c.trabalhado) : '') + (c.obs ? ' · ✎' : '');
     return '<button class="'+cls+'" data-d="'+c.date+'">'+
       '<span><span class="dnum">'+c.date.slice(8)+'</span><br><span class="dwd">'+WD3[c.dow]+'</span></span>'+
-      '<span><span class="hrs">'+linha+'</span><br><span class="sit">'+esc(sub)+'</span></span>'+
+      '<span><span class="hrs">'+linha+'</span><br><span class="sit'+(c.feriado ? ' fer' : c.situacao === 'Home office' ? ' hm' : '')+'">'+esc(sub)+'</span></span>'+
       '<span class="chip '+chipCls(c)+'">'+(c.conta ? minToSigned(c.saldo) : (chipCls(c)==='warn' ? '!' : '·'))+'</span></button>';
   }).join('');
   Array.prototype.forEach.call(list.querySelectorAll('[data-d]'), function(b2){
