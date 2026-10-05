@@ -359,10 +359,9 @@ var WD = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 var WD3 = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 var MES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
-/* Feriados nacionais (Brasil). Os fixos mudam o cálculo do dia (sem previsto, tudo
-   que trabalhar vira adicional, igual fim de semana). Carnaval e Corpus Christi são
-   ponto facultativo: só aparecem como aviso, sem mudar o saldo. Feriados estaduais
-   e municipais não entram. */
+/* Feriados nacionais (Brasil) e pontos facultativos (Carnaval, Corpus Christi), todos
+   tratados como feriado: sem previsto, e tudo que trabalhar vira adicional, igual fim
+   de semana. Feriados estaduais e municipais não entram. */
 var _pascoa = {};
 function pascoa(ano){
   if(_pascoa[ano]) return _pascoa[ano];
@@ -377,14 +376,10 @@ var FERIADOS_FIXOS = { '01-01':'Confraternização Universal', '04-21':'Tiradent
   '11-15':'Proclamação da República', '11-20':'Consciência Negra', '12-25':'Natal' };
 function feriadoNome(date){
   if(FERIADOS_FIXOS[date.slice(5)]) return FERIADOS_FIXOS[date.slice(5)];
-  if(date === addDays(pascoa(+date.slice(0,4)), -2)) return 'Sexta-feira Santa';
-  return '';
-}
-function facultativoNome(date){
   var p = pascoa(+date.slice(0,4));
-  if(date === addDays(p,-48)) return 'Carnaval';
-  if(date === addDays(p,-47)) return 'Carnaval';
-  if(date === addDays(p,60)) return 'Corpus Christi';
+  if(date === addDays(p,-2)) return 'Sexta-feira Santa';
+  if(date === addDays(p,-48) || date === addDays(p,-47)) return 'Carnaval (ponto facultativo)';
+  if(date === addDays(p,60)) return 'Corpus Christi (ponto facultativo)';
   return '';
 }
 
@@ -426,7 +421,7 @@ function calcDia(date, rec, cfg, hoje){
     sit = 'Home office';
     previsto = util ? cfg.jornadaMin : 0;
     bruto = 0; almoco = 0; trabalhado = previsto; saldo = 0;
-    return { date:date, dow:dowOf(date), weekend:weekend, util:util, feriado:feriado, facultativo:facultativoNome(date), marks:marks,
+    return { date:date, dow:dowOf(date), weekend:weekend, util:util, feriado:feriado, marks:marks,
              entrada:null, saida:null, pares:0, bruto:0, almoco:0, trabalhado:trabalhado,
              previsto:previsto, saldo:0, situacao:sit, conta:true, emAberto:false, obs: rec.obs || '' };
   }
@@ -448,7 +443,7 @@ function calcDia(date, rec, cfg, hoje){
 
   return {
     date: date, dow: dowOf(date), weekend: weekend, util: util,
-    feriado: feriado, facultativo: facultativoNome(date),
+    feriado: feriado,
     marks: marks, entrada: firstIn, saida: lastOut, pares: pairs.length,
     bruto: bruto, almoco: almoco, trabalhado: trabalhado, previsto: previsto,
     saldo: conta ? saldo : 0, situacao: sit, conta: conta, emAberto: emAberto,
@@ -938,7 +933,6 @@ function linhasDetalhe(de, ate){
     var obs = [];
     if(c.situacao === 'Home office') obs.push('Home office');
     if(c.feriado) obs.push('Feriado: '+c.feriado+(c.entrada || c.marks.length ? ' — TRABALHOU NO FERIADO' : ''));
-    if(c.facultativo) obs.push('Ponto facultativo: '+c.facultativo);
     if(c.obs) obs.push(c.obs);
     return [
       c.date.split('-').reverse().join('/'),

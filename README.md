@@ -57,17 +57,17 @@ Na tela **Resumo**, o campo **Mês a exportar** permite escolher o mês atual, u
 (dentro do período de retenção) ou um futuro. Meses futuros saem com os dias como "Pendente".
 
 No **Detalhado** saem só: Data, Dia, Tipo, Entrada, Saída, Saldo do dia e Observação.
-A **Observação** junta, nesta ordem: "Home office", o feriado, o ponto facultativo e o
+A **Observação** junta, nesta ordem: "Home office", o feriado e o
 texto digitado pelo colaborador. Dia de feriado com marcação aparece como
 "TRABALHOU NO FERIADO". A linha **TOTAL** mostra o saldo do período.
 
 ## Feriados
 
-Feriados nacionais (incluindo Sexta-feira Santa e Consciência Negra) são calculados no
-próprio app, sem internet. No feriado o previsto é zero: sem marcação não é falta, e o
-que for trabalhado entra como adicional (igual fim de semana). Carnaval e Corpus Christi
-são ponto facultativo: aparecem como aviso na Observação, sem mudar o saldo. Feriados
-estaduais e municipais **não** estão incluídos.
+Feriados nacionais (incluindo Sexta-feira Santa e Consciência Negra) e os pontos
+facultativos (Carnaval e Corpus Christi) são calculados no próprio app, sem internet, e
+tratados como feriado: o previsto é zero, sem marcação não é falta, e o que for trabalhado
+entra como adicional (igual fim de semana). Feriados estaduais e municipais **não** estão
+incluídos.
 
 ## Atenção
 
