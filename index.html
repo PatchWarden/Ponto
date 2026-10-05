@@ -178,7 +178,7 @@ table.tbl tr:last-child td{border-bottom:0}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink);background:var(--surface-2);
   border:1px solid var(--line-strong);border-radius:10px;padding:10px 11px;width:100%}
-input[type=time],input[type=date]{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+input[type=time],input[type=date],input[type=month]{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
 textarea{min-height:64px;resize:vertical}
 .hint{font-size:11.5px;color:var(--ink-3);line-height:1.4}
@@ -277,11 +277,12 @@ details.adv > div{padding-bottom:11px;display:flex;flex-direction:column;gap:8px
   <div class="card scrollx"><table class="tbl" id="rTable"></table></div>
   <div class="sec-title"><span class="lbl">Exportar</span></div>
   <div class="stack">
-    <button class="btn primary" id="expMes">Exportar mês atual (XLSX)</button>
+    <div class="field"><label class="hint" for="expMesSel">Mês a exportar</label><input type="month" id="expMesSel"></div>
+    <button class="btn primary" id="expMes">Exportar mês selecionado (XLSX)</button>
     <button class="btn" id="expTudo">Exportar período completo (XLSX)</button>
-    <button class="btn ghost sm" id="expTsv">Copiar tabela do mês (colar no Excel)</button>
+    <button class="btn ghost sm" id="expTsv">Copiar tabela do mês selecionado (colar no Excel)</button>
   </div>
-  <p class="hint">O arquivo sai com duas abas: <b>Detalhado</b> (dia a dia, com observações) e <b>Resumo</b> (saldo de cada mês, fechado mês a mês).</p>
+  <p class="hint">O arquivo sai com duas abas: <b>Detalhado</b> (dia a dia; home office aparece na coluna Observação e o texto do colaborador em "Obs. do colaborador") e <b>Resumo</b> (saldo de cada mês, fechado mês a mês).</p>
 </section>
 
 <!-- ============ AJUSTES ============ -->
@@ -901,8 +902,10 @@ function renderResumo(){
 /* ---------------- exportação ---------------- */
 function linhasDetalhe(de, ate){
   var ap = apurar(S.dias, CFG(), de, ate, hojeStr());
-  var head = ['Data','Dia','Tipo','Entrada','Saída','Marcações','Bruto','Intervalo','Trabalhado','Previsto','Saldo','Saldo (h)','Situação','Observação'];
+  var head = ['Data','Dia','Tipo','Entrada','Saída','Marcações','Bruto','Intervalo','Trabalhado','Previsto','Saldo','Saldo (h)','Situação','Observação','Obs. do colaborador'];
   var body = ap.dias.map(function(c){
+    var home = c.situacao === 'Home office';
+    // Home office não tem marcação: só a jornada fixa fica nos números; o rótulo vai na Observação
     return [
       c.date.split('-').reverse().join('/'),
       WD3[c.dow],
@@ -912,17 +915,18 @@ function linhasDetalhe(de, ate){
       c.marks.map(function(m){ return (m.tipo==='in'?'E ':'S ')+m.t.slice(0,5); }).join('  ·  '),
       c.bruto ? minToHM(c.bruto) : '',
       c.almoco ? minToHM(c.almoco) : '',
-      c.trabalhado ? minToHM(c.trabalhado) : '',
+      home ? '' : (c.trabalhado ? minToHM(c.trabalhado) : ''),
       c.previsto ? minToHM(c.previsto) : '',
       c.conta ? minToSigned(c.saldo) : '',
       c.conta ? Math.round(c.saldo/60*100)/100 : '',
-      c.situacao,
+      home ? '' : c.situacao,
+      home ? 'Home office' : '',
       c.obs
     ];
   });
   var t = ap.tot;
   return { head: head, body: body, tot: t,
-    totalRow: ['TOTAL','','','','','', '', '', minToHM(t.trabalhado), minToHM(t.previsto), minToSigned(t.saldo), Math.round(t.saldo/60*100)/100, t.faltas+' sem marcação', ''] };
+    totalRow: ['TOTAL','','','','','', '', '', minToHM(t.trabalhado), minToHM(t.previsto), minToSigned(t.saldo), Math.round(t.saldo/60*100)/100, t.faltas+' sem marcação', '', ''] };
 }
 
 function buildWb(de, ate, titulo){
@@ -939,8 +943,8 @@ function buildWb(de, ate, titulo){
   ].concat(d.body).concat([[], d.totalRow]);
 
   var ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = [{wch:11},{wch:5},{wch:14},{wch:9},{wch:9},{wch:26},{wch:8},{wch:9},{wch:11},{wch:9},{wch:9},{wch:9},{wch:15},{wch:38}];
-  ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s:{r:5,c:0}, e:{r:5+d.body.length, c:13} }) };
+  ws['!cols'] = [{wch:11},{wch:5},{wch:14},{wch:9},{wch:9},{wch:26},{wch:8},{wch:9},{wch:11},{wch:9},{wch:9},{wch:9},{wch:15},{wch:16},{wch:38}];
+  ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s:{r:5,c:0}, e:{r:5+d.body.length, c:14} }) };
 
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Detalhado');
@@ -966,7 +970,7 @@ if(window.claude && typeof window.claude.use === 'function'){
 }
 function rotularExport(){
   if(!DL) return;
-  $('expMes').textContent = 'Exportar mês atual (CSV)';
+  $('expMes').textContent = 'Exportar mês selecionado (CSV)';
   $('expTudo').textContent = 'Exportar período completo (CSV)';
   $('bkExp').textContent = 'Baixar backup (JSON)';
 }
@@ -1013,8 +1017,12 @@ function baixarXlsx(de, ate, nome){
     toast('Download bloqueado aqui. Use "Copiar tabela".');
   }
 }
+$('expMesSel').value = refKey(new Date());
 $('expMes').onclick = function(){
-  var b = mesBounds(mesRef);
+  var v = $('expMesSel').value;
+  if(!/^\d{4}-\d{2}$/.test(v)){ toast('Escolha o mês a exportar.'); return; }
+  var b = mesBounds(new Date(+v.slice(0,4), +v.slice(5,7)-1, 1));
+  if(b[1] < inicioVivo()){ toast('Esse mês já foi arquivado: só consta no Resumo (período completo).'); return; }
   baixarXlsx(b[0], b[1], 'ponto_'+(S.perfil.nome||'').replace(/\W+/g,'_').toLowerCase().replace(/^_|_$/g,'')+'_'+b[0].slice(0,7)+'.xlsx');
 };
 $('expTudo').onclick = function(){
@@ -1022,7 +1030,8 @@ $('expTudo').onclick = function(){
   baixarXlsx(inicioVivo(), fim, 'ponto_periodo_'+inicioVivo()+'_a_'+fim+'.xlsx');
 };
 $('expTsv').onclick = function(){
-  var b = mesBounds(mesRef), d = linhasDetalhe(b[0], b[1]);
+  var v = $('expMesSel').value || refKey(new Date());
+  var b = mesBounds(new Date(+v.slice(0,4), +v.slice(5,7)-1, 1)), d = linhasDetalhe(b[0], b[1]);
   var txt = [d.head].concat(d.body).concat([d.totalRow]).map(function(r){ return r.join('\t'); }).join('\n');
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(function(){ toast('Tabela copiada — cole no Excel.'); },
