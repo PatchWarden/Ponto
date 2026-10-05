@@ -51,7 +51,15 @@ histórico mês a mês continuar íntegro. O prazo é ajustável em **Ajustes**
 ## Exportação
 
 Arquivo `.xlsx` com duas abas: **Detalhado** (dia a dia, com marcações, situação e
-observação) e **Resumo** (fechamento de cada mês). Quando o navegador bloqueia o
+observação) e **Resumo** (fechamento de cada mês).
+
+Na tela **Resumo**, o campo **Mês a exportar** permite escolher o mês atual, um passado
+(dentro do período de retenção) ou um futuro. Meses futuros saem com os dias como "Pendente".
+
+No **Detalhado**: dias de home office não mostram marcação nem Trabalhado/Situação — a
+coluna **Observação** traz "Home office". O texto digitado pelo colaborador fica na coluna
+**Obs. do colaborador**. A linha **TOTAL** inclui a jornada fixa dos dias de home office em
+Trabalhado, mesmo com a célula do dia vazia. Quando o navegador bloqueia o
 download, o botão "Copiar tabela do mês" joga o conteúdo na área de transferência
 para colar direto no Excel.
 
