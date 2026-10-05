@@ -282,7 +282,7 @@ details.adv > div{padding-bottom:11px;display:flex;flex-direction:column;gap:8px
     <button class="btn" id="expTudo">Exportar período completo (XLSX)</button>
     <button class="btn ghost sm" id="expTsv">Copiar tabela do mês selecionado (colar no Excel)</button>
   </div>
-  <p class="hint">O arquivo sai com duas abas: <b>Detalhado</b> (dia a dia; home office aparece na coluna Observação e o texto do colaborador em "Obs. do colaborador") e <b>Resumo</b> (saldo de cada mês, fechado mês a mês).</p>
+  <p class="hint">O arquivo sai com duas abas: <b>Detalhado</b> (data, dia, tipo, entrada, saída, saldo do dia e observação — home office, feriados e o texto do colaborador ficam na Observação) e <b>Resumo</b> (saldo de cada mês, fechado mês a mês).</p>
 </section>
 
 <!-- ============ AJUSTES ============ -->
@@ -359,12 +359,42 @@ var WD = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 var WD3 = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 var MES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
+/* Feriados nacionais (Brasil). Os fixos mudam o cálculo do dia (sem previsto, tudo
+   que trabalhar vira adicional, igual fim de semana). Carnaval e Corpus Christi são
+   ponto facultativo: só aparecem como aviso, sem mudar o saldo. Feriados estaduais
+   e municipais não entram. */
+var _pascoa = {};
+function pascoa(ano){
+  if(_pascoa[ano]) return _pascoa[ano];
+  var a = ano%19, b = Math.floor(ano/100), c = ano%100, d = Math.floor(b/4), e = b%4,
+      f = Math.floor((b+8)/25), g = Math.floor((b-f+1)/3), h = (19*a+b-d-g+15)%30,
+      i = Math.floor(c/4), k = c%4, l = (32+2*e+2*i-h-k)%7, m = Math.floor((a+11*h+22*l)/451),
+      mes = Math.floor((h+l-7*m+114)/31), dia = (h+l-7*m+114)%31+1;
+  return (_pascoa[ano] = ano+'-'+pad0(mes)+'-'+pad0(dia));
+}
+var FERIADOS_FIXOS = { '01-01':'Confraternização Universal', '04-21':'Tiradentes', '05-01':'Dia do Trabalho',
+  '09-07':'Independência do Brasil', '10-12':'Nossa Senhora Aparecida', '11-02':'Finados',
+  '11-15':'Proclamação da República', '11-20':'Consciência Negra', '12-25':'Natal' };
+function feriadoNome(date){
+  if(FERIADOS_FIXOS[date.slice(5)]) return FERIADOS_FIXOS[date.slice(5)];
+  if(date === addDays(pascoa(+date.slice(0,4)), -2)) return 'Sexta-feira Santa';
+  return '';
+}
+function facultativoNome(date){
+  var p = pascoa(+date.slice(0,4));
+  if(date === addDays(p,-48)) return 'Carnaval';
+  if(date === addDays(p,-47)) return 'Carnaval';
+  if(date === addDays(p,60)) return 'Corpus Christi';
+  return '';
+}
+
 // rec = { m:[{t:"HH:MM:SS",tipo:"in"|"out"}], sit:"normal"|"abono", almoco:<min|null>, obs:"" }
 function calcDia(date, rec, cfg, hoje){
   rec = rec || {};
   var marks = rec.m || [];
   var weekend = isWeekend(date);
-  var util = !weekend;
+  var feriado = feriadoNome(date);
+  var util = !weekend && !feriado;
   var abono = rec.sit === 'abono';
   var home = rec.sit === 'home';
   var futuro = date > hoje;
@@ -396,7 +426,7 @@ function calcDia(date, rec, cfg, hoje){
     sit = 'Home office';
     previsto = util ? cfg.jornadaMin : 0;
     bruto = 0; almoco = 0; trabalhado = previsto; saldo = 0;
-    return { date:date, dow:dowOf(date), weekend:weekend, util:util, marks:marks,
+    return { date:date, dow:dowOf(date), weekend:weekend, util:util, feriado:feriado, facultativo:facultativoNome(date), marks:marks,
              entrada:null, saida:null, pares:0, bruto:0, almoco:0, trabalhado:trabalhado,
              previsto:previsto, saldo:0, situacao:sit, conta:true, emAberto:false, obs: rec.obs || '' };
   }
@@ -408,7 +438,7 @@ function calcDia(date, rec, cfg, hoje){
   }
   else if(emAberto){ sit = 'Em aberto'; conta = false; previsto = 0; }
   else if(inconsistente){ sit = 'Inconsistente'; conta = false; previsto = 0; }
-  else { sit = weekend ? 'Adicional' : 'Normal'; saldo = trabalhado - previsto; }
+  else { sit = (weekend || feriado) ? 'Adicional' : 'Normal'; saldo = trabalhado - previsto; }
 
   var firstIn = null, lastOut = null;
   for(var j=0;j<marks.length;j++){
@@ -418,6 +448,7 @@ function calcDia(date, rec, cfg, hoje){
 
   return {
     date: date, dow: dowOf(date), weekend: weekend, util: util,
+    feriado: feriado, facultativo: facultativoNome(date),
     marks: marks, entrada: firstIn, saida: lastOut, pares: pairs.length,
     bruto: bruto, almoco: almoco, trabalhado: trabalhado, previsto: previsto,
     saldo: conta ? saldo : 0, situacao: sit, conta: conta, emAberto: emAberto,
@@ -716,7 +747,7 @@ function renderDias(){
     var linha = (c.entrada||c.saida)
       ? esc((c.entrada||'--:--').slice(0,5))+' → '+esc((c.saida||'--:--').slice(0,5)) + (c.pares>1 ? '  ('+c.pares+' pares)' : '')
       : '—';
-    var sub = c.situacao + (c.trabalhado ? ' · '+minToHM(c.trabalhado) : '') + (c.obs ? ' · ✎' : '');
+    var sub = (c.feriado && c.situacao === 'Adicional' ? 'Feriado trabalhado' : c.feriado ? 'Feriado' : c.situacao) + (c.trabalhado ? ' · '+minToHM(c.trabalhado) : '') + (c.obs ? ' · ✎' : '');
     return '<button class="'+cls+'" data-d="'+c.date+'">'+
       '<span><span class="dnum">'+c.date.slice(8)+'</span><br><span class="dwd">'+WD3[c.dow]+'</span></span>'+
       '<span><span class="hrs">'+linha+'</span><br><span class="sit">'+esc(sub)+'</span></span>'+
@@ -902,31 +933,26 @@ function renderResumo(){
 /* ---------------- exportação ---------------- */
 function linhasDetalhe(de, ate){
   var ap = apurar(S.dias, CFG(), de, ate, hojeStr());
-  var head = ['Data','Dia','Tipo','Entrada','Saída','Marcações','Bruto','Intervalo','Trabalhado','Previsto','Saldo','Saldo (h)','Situação','Observação','Obs. do colaborador'];
+  var head = ['Data','Dia','Tipo','Entrada','Saída','Saldo do dia','Observação'];
   var body = ap.dias.map(function(c){
-    var home = c.situacao === 'Home office';
-    // Home office não tem marcação: só a jornada fixa fica nos números; o rótulo vai na Observação
+    var obs = [];
+    if(c.situacao === 'Home office') obs.push('Home office');
+    if(c.feriado) obs.push('Feriado: '+c.feriado+(c.entrada || c.marks.length ? ' — TRABALHOU NO FERIADO' : ''));
+    if(c.facultativo) obs.push('Ponto facultativo: '+c.facultativo);
+    if(c.obs) obs.push(c.obs);
     return [
       c.date.split('-').reverse().join('/'),
       WD3[c.dow],
-      c.weekend ? 'Fim de semana' : 'Dia útil',
+      c.feriado ? 'Feriado' : (c.weekend ? 'Fim de semana' : 'Dia útil'),
       c.entrada ? c.entrada.slice(0,5) : '',
       c.saida ? c.saida.slice(0,5) : '',
-      c.marks.map(function(m){ return (m.tipo==='in'?'E ':'S ')+m.t.slice(0,5); }).join('  ·  '),
-      c.bruto ? minToHM(c.bruto) : '',
-      c.almoco ? minToHM(c.almoco) : '',
-      home ? '' : (c.trabalhado ? minToHM(c.trabalhado) : ''),
-      c.previsto ? minToHM(c.previsto) : '',
       c.conta ? minToSigned(c.saldo) : '',
-      c.conta ? Math.round(c.saldo/60*100)/100 : '',
-      home ? '' : c.situacao,
-      home ? 'Home office' : '',
-      c.obs
+      obs.join(' · ')
     ];
   });
   var t = ap.tot;
   return { head: head, body: body, tot: t,
-    totalRow: ['TOTAL','','','','','', '', '', minToHM(t.trabalhado), minToHM(t.previsto), minToSigned(t.saldo), Math.round(t.saldo/60*100)/100, t.faltas+' sem marcação', '', ''] };
+    totalRow: ['TOTAL','','','','', minToSigned(t.saldo), t.faltas+' dia(s) sem marcação'] };
 }
 
 function buildWb(de, ate, titulo){
@@ -943,8 +969,8 @@ function buildWb(de, ate, titulo){
   ].concat(d.body).concat([[], d.totalRow]);
 
   var ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = [{wch:11},{wch:5},{wch:14},{wch:9},{wch:9},{wch:26},{wch:8},{wch:9},{wch:11},{wch:9},{wch:9},{wch:9},{wch:15},{wch:16},{wch:38}];
-  ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s:{r:5,c:0}, e:{r:5+d.body.length, c:14} }) };
+  ws['!cols'] = [{wch:11},{wch:5},{wch:14},{wch:9},{wch:9},{wch:12},{wch:60}];
+  ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s:{r:5,c:0}, e:{r:5+d.body.length, c:6} }) };
 
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Detalhado');

@@ -56,12 +56,18 @@ observação) e **Resumo** (fechamento de cada mês).
 Na tela **Resumo**, o campo **Mês a exportar** permite escolher o mês atual, um passado
 (dentro do período de retenção) ou um futuro. Meses futuros saem com os dias como "Pendente".
 
-No **Detalhado**: dias de home office não mostram marcação nem Trabalhado/Situação — a
-coluna **Observação** traz "Home office". O texto digitado pelo colaborador fica na coluna
-**Obs. do colaborador**. A linha **TOTAL** inclui a jornada fixa dos dias de home office em
-Trabalhado, mesmo com a célula do dia vazia. Quando o navegador bloqueia o
-download, o botão "Copiar tabela do mês" joga o conteúdo na área de transferência
-para colar direto no Excel.
+No **Detalhado** saem só: Data, Dia, Tipo, Entrada, Saída, Saldo do dia e Observação.
+A **Observação** junta, nesta ordem: "Home office", o feriado, o ponto facultativo e o
+texto digitado pelo colaborador. Dia de feriado com marcação aparece como
+"TRABALHOU NO FERIADO". A linha **TOTAL** mostra o saldo do período.
+
+## Feriados
+
+Feriados nacionais (incluindo Sexta-feira Santa e Consciência Negra) são calculados no
+próprio app, sem internet. No feriado o previsto é zero: sem marcação não é falta, e o
+que for trabalhado entra como adicional (igual fim de semana). Carnaval e Corpus Christi
+são ponto facultativo: aparecem como aviso na Observação, sem mudar o saldo. Feriados
+estaduais e municipais **não** estão incluídos.
 
 ## Atenção
 
